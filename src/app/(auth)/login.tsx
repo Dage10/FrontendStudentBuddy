@@ -1,9 +1,5 @@
-import { Text, View } from "react-native";
+import {AuthForm} from "@/components/auth-form";
 
 export default function Login() {
-    return (
-        <View>
-            <Text>Login Screen</Text>
-        </View>
-    );
+    return <AuthForm mode="login"/>
 }
