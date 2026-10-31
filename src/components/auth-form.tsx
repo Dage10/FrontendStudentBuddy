@@ -3,11 +3,13 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 
 import { Link, router } from 'expo-router';
 import { Screen } from '@/components/screen';
 import { errorMessage, login, register} from "@/lib/api";
+import { useSession } from '@/lib/session';
 
 const common = { autoCapitalize: 'none', autoCorrect: false } as const;
 
 export function AuthForm({ mode } : { mode: 'login' | 'register' }){
     const isLogin = mode === 'login';
+    const { signIn } = useSession();
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -19,8 +21,8 @@ export function AuthForm({ mode } : { mode: 'login' | 'register' }){
         setError(undefined);
         try {
             if (isLogin) {
-                await login(username, password);
-                router.replace('/home');
+                const {accessToken} = await login(username, password);
+                await signIn(accessToken);
             } else {
                 await register(username, email, password);
                 router.replace('/login');
