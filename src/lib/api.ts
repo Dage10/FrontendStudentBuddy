@@ -1,4 +1,5 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
+const TIMEOUT_MS = 40_000;
 
 export class ApiError extends Error {
     constructor(readonly status: number){
@@ -6,16 +7,26 @@ export class ApiError extends Error {
     }
 }
 
-async function post<T>(path: string, body: object ): Promise<T> {
-    const res = await fetch(`${API_URL}${path}`,{
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-    });
-    if (!res.ok) {
-        throw new ApiError(res.status);
+async function post<T>(path: string, body: object, token?: string): Promise<T> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+        const res = await fetch(`${API_URL}${path}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...(token ? {Authorization: `Bearer ${token}`} : {}),
+            },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+        });
+        if (!res.ok) {
+            throw new ApiError(res.status);
+        }
+        return await res.json();
+    } finally {
+        clearTimeout(timer);
     }
-    return res.json();
 }
 
 export const register = (username: string, email: string, password: string)  =>
@@ -24,10 +35,15 @@ export const register = (username: string, email: string, password: string)  =>
 export const login = (username: string, password: string) =>
     post<{ accessToken: string }>('/auth/login', { username, password });
 
+export const study = (token: string, topic: string) =>
+    post<{ sessionId: string; explanation: string }>('/study', { topic }, token);
+
 const MESSAGES: Record<number, string> = {
     400: 'Check the entered data',
     401: 'User or password are incorrect',
     409: 'Username or email already exists',
+    429: 'Too many requests. Try again in a minute',
+    502: 'Could not generate the quiz. Try again',
 }
 
 export function errorMessage(e: unknown){
