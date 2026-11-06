@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Screen } from '@/components/screen'
+import {TAB_BAR_SPACE} from "@/constants/layout";
 
 export default function Study() {
     const { sessionId, topic, explanation } = useLocalSearchParams<{
@@ -31,7 +32,7 @@ export default function Study() {
 }
 
 const styles = StyleSheet.create({
-   content: { padding: 24, paddingBottom: 120 },
+   content: { padding: 24, paddingBottom: TAB_BAR_SPACE, gap: 16 },
    title: { fontSize: 28, fontWeight: '600', color: '#0F172A' },
    text: { fontSize: 16, lineHeight: 26, color: '#334155' },
 });
