@@ -23,6 +23,7 @@ function RootNavigator(){
         <Stack screenOptions={{ headerShown: false }}>
             <Stack.Protected guard={!!token} redirectTo='/'>
                 <Stack.Screen name="(tabs)" options={{headerShown: false}} />
+                <Stack.Screen name="quiz/[id]" options={{headerShown: false}}/>
             </Stack.Protected>
             <Stack.Protected guard={!token} redirectTo='/home'>
                 <Stack.Screen name="index" />

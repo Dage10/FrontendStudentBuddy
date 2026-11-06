@@ -37,7 +37,7 @@ function TabButton({
     style,
     ...props
 }: TabTriggerSlotProps & {Icon: typeof HomeIcon; label: string;}){
-    const color = isFocused ? "#4F46E5" : "#64758B";
+    const color = isFocused ? "#4F46E5" : "#64748B";
     return (
         <Pressable
             ref={ref}
