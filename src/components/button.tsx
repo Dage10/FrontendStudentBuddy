@@ -5,7 +5,7 @@ type Props = { title: string; onPress: () => void; disabled?: boolean; loading?:
 export function Button({ title, onPress, disabled, loading }: Props){
     const off = disabled || loading;
     return (
-        <Pressable style={[styles.button, off && styles.off]} onPress={onPress}>
+        <Pressable disabled={off} style={[styles.button, off && styles.off]} onPress={onPress}>
             {loading ? <ActivityIndicator color="#FFFFFF" /> : <Text style={styles.text}>{title}</Text>}
         </Pressable>
     )
