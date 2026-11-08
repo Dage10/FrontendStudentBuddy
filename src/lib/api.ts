@@ -7,43 +7,34 @@ export class ApiError extends Error {
     }
 }
 
-async function post<T>(path: string, body: object, token?: string): Promise<T> {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-    try {
-        const res = await fetch(`${API_URL}${path}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                ...(token ? {Authorization: `Bearer ${token}`} : {}),
-            },
-            body: JSON.stringify(body),
-            signal: controller.signal,
-        });
-        if (!res.ok) {
-            throw new ApiError(res.status);
-        }
-        return await res.json();
-    } finally {
-        clearTimeout(timer);
-    }
-}
+let onUnauthorized = () => {};
 
-async function get<T>(path: string, token: string): Promise<T> {
+export const setUnauthorizedHandler = (handler: () => void) => {
+  onUnauthorized = handler;
+};
+
+async function request<T>(
+    method: 'GET' | 'POST' | 'DELETE',
+    path: string,
+    { token, body }: { token?: string; body?: object } = {}
+): Promise<T> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
         const res = await fetch(`${API_URL}${path}`, {
-            method: 'GET',
+            method,
             headers: {
-                Authorization: `Bearer ${token}`,
+                ...(body ? { 'Content-Type': 'application/json' } : {}),
+                ...(token ? { Authorization: `Bearer ${token}` } : {}),
             },
+            body: body && JSON.stringify(body),
             signal: controller.signal,
         });
         if (!res.ok) {
+            if (res.status === 401 && token) onUnauthorized();
             throw new ApiError(res.status);
         }
-        return await res.json();
+        return res.status === 204 ? (undefined as T) : await res.json();
     } finally {
         clearTimeout(timer);
     }
@@ -59,27 +50,46 @@ export type Question = {
     is_correct?: boolean | null;
 };
 
-export const register = (username: string, email: string, password: string)  =>
-    post<{ id: string; username:string }>('/auth/register', { username, email, password });
-
-export const login = (username: string, password: string) =>
-    post<{ accessToken: string }>('/auth/login', { username, password });
-
-export const study = (token: string, topic: string) =>
-    post<{ sessionId: string; explanation: string }>('/study', { topic }, token);
-
-export const getQuiz = async (token: string, sessionId: string) => {
-    const data = await get<{ questions: Question[] }>(`/quiz/${sessionId}`, token);
-    return data.questions;
+export type HistoryItem = {
+    id: string;
+    topic: string;
+    created_at: string;
+    correct: number;
+    total: number;
+    pending: boolean;
 }
 
+export type HistoryDetail = HistoryItem & { explanation: string };
+
+export const register = (username: string, email: string, password: string)  =>
+    request<{ id: string; username:string }>('POST','/auth/register', { body: { username, email, password } });
+
+export const login = (username: string, password: string) =>
+    request<{ accessToken: string }>('POST','/auth/login', { body: { username, password } });
+
+export const study = (token: string, topic: string) =>
+    request<{ sessionId: string; explanation: string }>('POST','/study', { token, body: { topic } });
+
+export const getHistory = async (token: string) =>
+    (await request<{ sessions: HistoryItem[] }>('GET','/study', { token })).sessions;
+
+export const getHistoryDetail = (token: string, id: string) =>
+    request<HistoryDetail>('GET', `/study/${id}`, { token });
+
+export const getQuiz = async (token: string, sessionId: string) =>
+    (await request<{ questions: Question[] }>('GET',`/quiz/${sessionId}`, { token })).questions;
+
+
 export const answerQuestion = (token: string, sessionId: string, questionId: string, answer: string) =>
-    post<{ isCorrect: boolean; correctAnswer: string }>(`/quiz/${sessionId}/answer`, { questionId, answer }, token);
+    request<{ isCorrect: boolean; correctAnswer: string }>('POST',`/quiz/${sessionId}/answer`, { token, body: { questionId, answer } });
+
+export const deleteAccount = (token: string, password: string) =>
+    request<void>('DELETE', '/auth/me', { token, body: { password } });
 
 const MESSAGES: Record<number, string> = {
     400: 'Check the entered data',
     401: 'User or password are incorrect',
-    403: 'Access denied',
+    403: 'Incorrect password',
     404: 'Resource not found',
     409: 'Username or email already exists',
     429: 'Too many requests. Try again in a minute',

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
 import * as SecureStore from 'expo-secure-store';
 const KEY = 'accessToken'
+import { setUnauthorizedHandler } from '@/lib/api';
 
 type Session = {
     token: string | null | undefined;
@@ -18,6 +19,8 @@ export function SessionProvider({ children }: PropsWithChildren){
     useEffect(() =>{
         SecureStore.getItemAsync(KEY).then(setToken, () => setToken(null));
     }, []);
+
+    useEffect(() => setUnauthorizedHandler(signOut));
 
     async function signIn(newToken: string){
         await SecureStore.setItemAsync(KEY, newToken);

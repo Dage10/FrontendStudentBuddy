@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View} from "react-native";
 import { router } from 'expo-router';
 import { Button } from '@/components/button';
-import { ApiError, errorMessage, study } from '@/lib/api';
+import { errorMessage, study } from '@/lib/api';
 import { useSession } from "@/lib/session";
 import { Screen } from "@/components/screen";
 import { TAB_BAR_SPACE } from '@/constants/layout';
@@ -22,11 +22,7 @@ export default function Home() {
             router.navigate({ pathname: '/study', params: { sessionId, topic: text, explanation } });
             setTopic('');
         }catch (e) {
-            if(e instanceof ApiError && e.status === 401) {
-                await signOut();
-            } else {
-                setError(errorMessage(e));
-            }
+            setError(errorMessage(e));
         } finally {
             setLoading(false);
         }

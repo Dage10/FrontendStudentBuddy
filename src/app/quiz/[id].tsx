@@ -6,30 +6,28 @@ import { Card } from '@/components/card';
 import { Screen } from '@/components/screen';
 import { TAB_BAR_SPACE } from '@/constants/layout';
 import { useSession } from '@/lib/session';
-import { getQuiz, answerQuestion, errorMessage, ApiError, type Question } from '@/lib/api';
+import { getQuiz, answerQuestion, errorMessage, type Question } from '@/lib/api';
 import { CheckIcon, XIcon } from '@/components/quiz-icons';
 
 export default function QuizScreen() {
     const { id } = useLocalSearchParams<{ id: string }>();
-    const { token, signOut } = useSession();
+    const { token } = useSession();
     const [ questions, setQuestions ] = useState<Question[]>([]);
     const [ currentIndex, setCurrentIndex ] = useState(0);
     const [ isFinished, setIsFinished ] = useState(false);
     const [ loading, setLoading ] = useState(true);
     const [ error, setError ] = useState<string>();
 
-    async function handleError(e: unknown) {
-        if (e instanceof ApiError && e.status === 401) return signOut();
-        setError(errorMessage(e));
-    }
-
     useEffect(() => {
         async function loadQuiz() {
             try {
                 const data = await getQuiz(token!, id);
                 setQuestions(data);
+                const next = data.findIndex((q) => !q.user_answer)
+                setIsFinished(next === -1);
+                setCurrentIndex(Math.max(next, 0));
             } catch (e) {
-                await handleError(e);
+               setError(errorMessage(e));
             } finally {
                 setLoading(false);
             }
@@ -112,7 +110,7 @@ export default function QuizScreen() {
                 prev.map(q => (q.id === currentQuestion.id ? {...q, user_answer: option, is_correct: result.isCorrect, correct_answer: result.correctAnswer } : q))
             );
         } catch (e) {
-            await handleError(e);
+            setError(errorMessage(e));
         }
     }
 
