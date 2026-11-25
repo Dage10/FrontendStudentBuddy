@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, View} from "react-native";
+import { KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, View} from "react-native";
 import { router } from 'expo-router';
 import { Button } from '@/components/button';
 import { errorMessage, study } from '@/lib/api';
